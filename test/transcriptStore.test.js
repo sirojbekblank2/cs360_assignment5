@@ -70,4 +70,53 @@ describe("TranscriptStore", () => {
     assert.deepEqual(store.getStudentIDs(" GRACE LEE "), [studentID]);
     assert.equal(store.getTranscript(studentID).student.studentName, "Grace Lee");
   });
+
+  test("BUG-102: rejects a second grade for the same student and course", () => {
+    const studentID = store.addStudent("Lin");
+    store.addGrade(studentID, "CS360", 85);
+
+    assert.throws(() => store.addGrade(studentID, " cs360 ", 70), {
+      message: "Grade already exists for course CS360",
+    });
+    assert.equal(store.getGrade(studentID, "CS360"), 85);
+  });
+
+  test("BUG-102: changeGrade remains the way to correct a grade", () => {
+    const studentID = store.addStudent("Lin");
+    store.addGrade(studentID, "CS360", 85);
+
+    assert.deepEqual(store.changeGrade(studentID, "cs360", 70), {
+      studentID,
+      course: "CS360",
+      grade: 70,
+    });
+    assert.equal(store.getGrade(studentID, "CS360"), 70);
+  });
+
+  test("BUG-102: other courses and other students can still be graded", () => {
+    const firstID = store.addStudent("Lin");
+    const secondID = store.addStudent("Kai");
+    store.addGrade(firstID, "CS360", 85);
+
+    assert.deepEqual(store.addGrade(firstID, "MATH101", 77), {
+      studentID: firstID,
+      course: "MATH101",
+      grade: 77,
+    });
+    assert.deepEqual(store.addGrade(secondID, "CS360", 91), {
+      studentID: secondID,
+      course: "CS360",
+      grade: 91,
+    });
+  });
+
+  test("BUG-101: deleting a student also removes their stored grades", () => {
+    const studentID = store.addStudent("Ada");
+    store.addGrade(studentID, "CS360", 90);
+
+    store.deleteStudent(studentID);
+
+    assert.equal(store.getGrade(studentID, "CS360"), undefined);
+    assert.throws(() => store.getTranscript(studentID), /Student not found/);
+  });
 });

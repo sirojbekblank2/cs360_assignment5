@@ -38,6 +38,7 @@ export class TranscriptStore {
     if (!this.#students.delete(parsedID)) {
       throw new Error(`Student not found: ${parsedID}`);
     }
+    this.#grades.delete(parsedID);
   }
 
   addGrade(studentID, course, grade) {
@@ -52,6 +53,9 @@ export class TranscriptStore {
     }
 
     const studentGrades = this.#grades.get(parsedID) ?? new Map();
+    if (studentGrades.has(normalizedCourse)) {
+      throw new Error(`Grade already exists for course ${normalizedCourse}`);
+    }
     studentGrades.set(normalizedCourse, numericGrade);
     this.#grades.set(parsedID, studentGrades);
     return { studentID: parsedID, course: normalizedCourse, grade: numericGrade };
